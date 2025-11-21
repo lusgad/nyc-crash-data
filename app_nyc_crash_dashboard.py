@@ -24,8 +24,17 @@ import plotly.figure_factory as ff
 import os
 
 url = "https://raw.githubusercontent.com/lusgad/nyc-crash-data/main/data_part_aa.gz"
-df = pd.read_csv(url, compression='gzip', dtype=str, low_memory=False)
+
+df = pd.read_csv(
+    url,
+    compression='gzip',
+    dtype=str,
+    low_memory=False,
+    nrows=108_000   # ⬅️ Load only first 108k rows
+)
+
 print(f"✅ Loaded {len(df)} rows from first part")
+
 
 # Clean borough names to proper capitalization
 borough_mapping = {
