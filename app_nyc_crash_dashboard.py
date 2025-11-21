@@ -23,13 +23,9 @@ from sklearn.preprocessing import StandardScaler
 import plotly.figure_factory as ff
 import os
 
-# Load from parquet file
-try:
-    parquet_url = "https://github.com/lusgad/nyc-crash-data/raw/main/nyc_crashes.parquet"
-    df = pd.read_parquet(parquet_url)
-    print(f"✅ Loaded {len(df)} rows from parquet")
-except Exception as e:
-    print(f"❌ Error loading parquet: {e}")
+url = "https://raw.githubusercontent.com/lusgad/nyc-crash-data/main/data_part_aa.gz"
+df = pd.read_csv(url, compression='gzip', dtype=str, low_memory=False)
+print(f"✅ Loaded {len(df)} rows from first part")
 
 # Clean borough names to proper capitalization
 borough_mapping = {
