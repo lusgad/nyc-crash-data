@@ -21,19 +21,16 @@ import re
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 import plotly.figure_factory as ff
+import os
 
-#df = pd.read_csv("merged_cleaned_dataset.csv", dtype=str) # load as strings to be safe
-# Load dataset from the 10 parts
-parts = []
-suffixes = ['aa', 'ab', 'ac', 'ad', 'ae', 'af', 'ag', 'ah', 'ai', 'aj']
-
-for suffix in suffixes:
-    url = f"https://raw.githubusercontent.com/lusgad/nyc-crash-data/main/data/data_part_{suffix}.gz"
-    df_part = pd.read_csv(url, compression='gzip', dtype=str)
-    parts.append(df_part)
-
-df = pd.concat(parts, ignore_index=True)
-
+# Load from parquet file
+try:
+    df = pd.read_parquet("nyc_crashes.parquet")
+    print(f"✅ Loaded {len(df)} rows from parquet")
+except Exception as e:
+    print(f"❌ Error loading parquet: {e}")
+    # Fallback to minimal data
+    df = pd.DataFrame({'BOROUGH': ['Unknown'], 'YEAR': [2024]})
 # Clean borough names to proper capitalization
 borough_mapping = {
     'MANHATTAN': 'Manhattan',
@@ -1195,5 +1192,7 @@ def clear_all_filters(n_clicks):
         ""     # search_input
     )
 
+if __name__ == '__main__':
+    app.run_server(host='0.0.0.0', port=int(os.environ.get('PORT', 8050)), debug=False)
 
 
