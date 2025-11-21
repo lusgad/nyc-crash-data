@@ -25,12 +25,12 @@ import os
 
 # Load from parquet file
 try:
-    df = pd.read_parquet("nyc_crashes.parquet")
+    parquet_url = "https://github.com/lusgad/nyc-crash-data/raw/main/nyc_crashes.parquet"
+    df = pd.read_parquet(parquet_url)
     print(f"✅ Loaded {len(df)} rows from parquet")
 except Exception as e:
     print(f"❌ Error loading parquet: {e}")
-    # Fallback to minimal data
-    df = pd.DataFrame({'BOROUGH': ['Unknown'], 'YEAR': [2024]})
+
 # Clean borough names to proper capitalization
 borough_mapping = {
     'MANHATTAN': 'Manhattan',
