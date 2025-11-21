@@ -571,6 +571,15 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🔬 Advanced Analytics"
 ])
 
+# Helper function to apply pink template
+def apply_pink_template(fig):
+    fig.update_layout(
+        paper_bgcolor=pink_template['paper_bgcolor'],
+        plot_bgcolor=pink_template['plot_bgcolor'],
+        font=pink_template['font']
+    )
+    return fig
+
 # ===== TAB 1: CRASH GEOGRAPHY =====
 with tab1:
     # Crash Map - Full Width
@@ -602,16 +611,12 @@ with tab1:
         )
         fig_map.update_traces(marker=dict(size=8, opacity=0.7))
         
-        # FIXED: Update layout without ** unpacking
+        # FIXED: Update layout without duplicate parameters
         fig_map.update_layout(
             mapbox_style="open-street-map",
-            margin=dict(t=0),
-            paper_bgcolor=pink_template['paper_bgcolor'],
-            plot_bgcolor=pink_template['plot_bgcolor'],
-            font=pink_template['font'],
-            xaxis=pink_template['xaxis'],
-            yaxis=pink_template['yaxis']
+            margin=dict(t=0)
         )
+        fig_map = apply_pink_template(fig_map)
         st.plotly_chart(fig_map, use_container_width=True)
     else:
         st.info("No location data to display for current filters")
@@ -628,14 +633,7 @@ with tab1:
             markers=True,
             color_discrete_map=BOROUGH_COLORS
         )
-        # FIXED: Update layout without ** unpacking
-        fig_year.update_layout(
-            paper_bgcolor=pink_template['paper_bgcolor'],
-            plot_bgcolor=pink_template['plot_bgcolor'],
-            font=pink_template['font'],
-            xaxis=pink_template['xaxis'],
-            yaxis=pink_template['yaxis']
-        )
+        fig_year = apply_pink_template(fig_year)
         st.plotly_chart(fig_year, use_container_width=True)
     else:
         st.info("No data available for crash trends")
@@ -654,15 +652,8 @@ with tab1:
                 color="BOROUGH",
                 color_discrete_map=BOROUGH_COLORS
             )
-            # FIXED: Update layout without ** unpacking
-            fig_borough.update_layout(
-                paper_bgcolor=pink_template['paper_bgcolor'],
-                plot_bgcolor=pink_template['plot_bgcolor'],
-                font=pink_template['font'],
-                xaxis=pink_template['xaxis'],
-                yaxis=pink_template['yaxis'],
-                showlegend=False
-            )
+            fig_borough = apply_pink_template(fig_borough)
+            fig_borough.update_layout(showlegend=False)
             st.plotly_chart(fig_borough, use_container_width=True)
     
     with col2:
@@ -679,14 +670,9 @@ with tab1:
                 color_discrete_map=BOROUGH_COLORS
             )
             fig_inj_borough.update_traces(textposition="outside")
-            # FIXED: Update layout without ** unpacking
+            fig_inj_borough = apply_pink_template(fig_inj_borough)
             fig_inj_borough.update_layout(
                 margin=dict(t=40, b=20),
-                paper_bgcolor=pink_template['paper_bgcolor'],
-                plot_bgcolor=pink_template['plot_bgcolor'],
-                font=pink_template['font'],
-                xaxis=pink_template['xaxis'],
-                yaxis=pink_template['yaxis'],
                 showlegend=False
             )
             st.plotly_chart(fig_inj_borough, use_container_width=True)
@@ -717,15 +703,10 @@ with tab2:
                 color="Count",
                 color_continuous_scale="purples"
             )
-            # FIXED: Update layout without ** unpacking
+            fig_factor = apply_pink_template(fig_factor)
             fig_factor.update_layout(
                 margin=dict(t=40, b=20), 
-                yaxis={'categoryorder':'total ascending'},
-                paper_bgcolor=pink_template['paper_bgcolor'],
-                plot_bgcolor=pink_template['plot_bgcolor'],
-                font=pink_template['font'],
-                xaxis=pink_template['xaxis'],
-                yaxis=pink_template['yaxis']
+                yaxis={'categoryorder':'total ascending'}
             )
             st.plotly_chart(fig_factor, use_container_width=True)
         else:
@@ -745,14 +726,7 @@ with tab2:
             },
             color_continuous_scale="viridis"
         )
-        # FIXED: Update layout without ** unpacking
-        fig_vehicle_factor.update_layout(
-            paper_bgcolor=pink_template['paper_bgcolor'],
-            plot_bgcolor=pink_template['plot_bgcolor'],
-            font=pink_template['font'],
-            xaxis=pink_template['xaxis'],
-            yaxis=pink_template['yaxis']
-        )
+        fig_vehicle_factor = apply_pink_template(fig_vehicle_factor)
         st.plotly_chart(fig_vehicle_factor, use_container_width=True)
     
     st.subheader("🏎️ Vehicle Type Trends")
@@ -771,14 +745,7 @@ with tab2:
             },
             color_discrete_sequence=vibrant_colors
         )
-        # FIXED: Update layout without ** unpacking
-        fig_vehicle_trend.update_layout(
-            paper_bgcolor=pink_template['paper_bgcolor'],
-            plot_bgcolor=pink_template['plot_bgcolor'],
-            font=pink_template['font'],
-            xaxis=pink_template['xaxis'],
-            yaxis=pink_template['yaxis']
-        )
+        fig_vehicle_trend = apply_pink_template(fig_vehicle_trend)
         st.plotly_chart(fig_vehicle_trend, use_container_width=True)
 
 # ===== TAB 3: PEOPLE & INJURIES =====
@@ -798,13 +765,8 @@ with tab3:
                 labels={"SAFETY_EQUIPMENT": "Safety Equipment", "Count": "Number of Records"},
                 color_discrete_sequence=['#FF8DA1', '#FFB6C1', '#FFD1DC', '#FFAEC9', '#FF85A1']
             )
-            # FIXED: Update layout without ** unpacking
-            fig_safety.update_layout(
-                margin=dict(t=40, b=20),
-                paper_bgcolor=pink_template['paper_bgcolor'],
-                plot_bgcolor=pink_template['plot_bgcolor'],
-                font=pink_template['font']
-            )
+            fig_safety = apply_pink_template(fig_safety)
+            fig_safety.update_layout(margin=dict(t=40, b=20))
             st.plotly_chart(fig_safety, use_container_width=True)
     
     with col2:
@@ -820,19 +782,14 @@ with tab3:
                 color_discrete_sequence=['#20B2AA']  # Teal color
             )
             fig_injury.update_yaxes(categoryorder="total ascending")
-            # FIXED: Update layout without ** unpacking
+            fig_injury = apply_pink_template(fig_injury)
             fig_injury.update_layout(
                 margin=dict(t=40, b=20),
-                paper_bgcolor=pink_template['paper_bgcolor'],
-                plot_bgcolor=pink_template['plot_bgcolor'],
-                font=pink_template['font'],
-                xaxis=pink_template['xaxis'],
-                yaxis=pink_template['yaxis'],
                 showlegend=False
             )
             st.plotly_chart(fig_injury, use_container_width=True)
 
-# Continue with other tabs (following the same pattern for layout updates)...
+# Continue with other tabs following the same pattern...
 
 # Footer
 st.markdown("---")
