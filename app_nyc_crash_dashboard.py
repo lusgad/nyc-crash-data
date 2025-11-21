@@ -221,8 +221,7 @@ app.layout = dbc.Container([
             html.H1("💥 NYC Crash Analysis Dashboard",
                    className="text-center mb-4",
                    style={'color': '#ffffff', 'fontWeight': 'bold', 'fontSize': '2.5rem'}),
-            html.Div("📊 Loading full dataset... This may take a moment for 200k+ records",
-                    id="summary_text",
+            html.Div(id="summary_text",
                     className="alert text-center",
                     style={'fontSize': '18px', 'fontWeight': 'bold', 'backgroundColor': '#FF8DA1', 'color': 'white', 'border': 'none'})
         ])
@@ -352,7 +351,7 @@ app.layout = dbc.Container([
             # Update Button
             dbc.Row([
                 dbc.Col([
-                    dbc.Button("🔍 APPLY FILTERS & UPDATE",
+                    dbc.Button("🔄 Update Dashboard",
                               id="generate_btn",
                               color="primary",
                               size="lg",
@@ -696,7 +695,7 @@ def parse_search_query(q):
     return found
 
 # -------------------------
-# Enhanced Callback with Advanced Analytics - MODIFIED FOR INITIAL LOAD
+# Enhanced Callback with Advanced Analytics
 # -------------------------
 @app.callback(
      [
@@ -736,95 +735,92 @@ def parse_search_query(q):
           State("year_slider", "value"),
           State("borough_filter", "value"),
           State("vehicle_filter", "value"),
-          State("factor_filter", "value"),
+          State("factor_filter", "value"),  # Contributing factors filter is back
           State("injury_filter", "value"),
           State("person_type_filter", "value"),
           State("search_input", "value"),
      ]
 )
 def update_dashboard(n_clicks, year_range, boroughs, vehicles, factors, injuries, person_type, search_text):
-     # Use the full dataset by default (no filtering initially)
      dff = df.copy()
-     
-     # If this is the initial load (n_clicks is None), use default filters
-     if n_clicks is None:
-          # Use the full year range from slider defaults
-          if year_range and len(year_range) == 2:
-               y0, y1 = int(year_range[0]), int(year_range[1])
-               dff = dff[(dff["YEAR"] >= y0) & (dff["YEAR"] <= y1)]
-     else:
-          # Apply filters only when user clicks the update button
-          # --- Apply year range ---
-          if year_range and len(year_range) == 2:
-               y0, y1 = int(year_range[0]), int(year_range[1])
-               dff = dff[(dff["YEAR"] >= y0) & (dff["YEAR"] <= y1)]
 
-          # --- Apply borough filter ---
-          if boroughs:
-               dff = dff[dff["BOROUGH"].isin(boroughs)]
+     # --- Apply search query ---
+     if search_text:
+          parsed = parse_search_query(search_text)
+          print(f"Parsed search: {parsed}")  # Debug line
 
-          # --- Apply injury filter ---
-          if injuries:
-               dff = dff[dff["PERSON_INJURY"].fillna("").astype(str).isin([str(i) for i in injuries])]
+          # Year range from search
+          if "year_range" in parsed:
+               yr_range = parsed["year_range"]
+               year_range = [max(year_range[0], yr_range[0]), min(year_range[1], yr_range[1])]
+          elif "year" in parsed:
+               yr = parsed["year"]
+               year_range = [max(year_range[0], yr), min(year_range[1], yr)]
 
-          # --- Apply vehicle filter ---
-          if vehicles:
-               mask = dff["VEHICLE_TYPES_LIST"].apply(lambda lst: any(v in (lst if isinstance(lst, list) else []) for v in vehicles))
-               dff = dff[mask]
+          # Borough filter from search
+          if "borough" in parsed:
+               if boroughs:
+                    boroughs = list(set(boroughs) & set(parsed["borough"]))
+               else:
+                    boroughs = parsed["borough"]
 
-          # --- Apply contributing factor filter ---
-          if factors:
-               clean_factors = [str(f).strip().strip("[]'\"") for f in factors]
-               mask = dff["FACTORS_LIST"].apply(lambda lst: any(
-                   any(clean_f in str(fact).strip().strip("[]'\"") for clean_f in clean_factors)
-                   for fact in (lst if isinstance(lst, list) else [])
-               ))
-               dff = dff[mask]
+          # Vehicle filter from search
+          if "vehicle" in parsed:
+               if vehicles:
+                    vehicles = list(set(vehicles) & set(parsed["vehicle"]))
+               else:
+                    vehicles = parsed["vehicle"]
 
-          # --- Apply person type filter ---
-          if person_type:
-               dff = dff[dff["PERSON_TYPE"].isin(person_type)]
+          # Person type filter from search
+          if "person_type" in parsed:
+               if person_type:
+                    person_type = list(set(person_type) & set(parsed["person_type"]))
+               else:
+                    person_type = parsed["person_type"]
 
-          # --- Apply search query ---
-          if search_text:
-               parsed = parse_search_query(search_text)
-               print(f"Parsed search: {parsed}")
+          # Injury filter from search
+          if "injury" in parsed:
+               if injuries:
+                    injuries = list(set(injuries) & set(parsed["injury"]))
+               else:
+                    injuries = parsed["injury"]
 
-               # Apply search filters (your existing search logic)
-               if "year_range" in parsed:
-                    yr_range = parsed["year_range"]
-                    year_range = [max(year_range[0], yr_range[0]), min(year_range[1], yr_range[1])]
-               elif "year" in parsed:
-                    yr = parsed["year"]
-                    year_range = [max(year_range[0], yr), min(year_range[1], yr)]
+          # Gender filter from search
+          if "gender" in parsed:
+               gender_filter = parsed["gender"]
+               dff = dff[dff["PERSON_SEX"].isin(gender_filter)]
 
-               if "borough" in parsed:
-                    if boroughs:
-                         boroughs = list(set(boroughs) & set(parsed["borough"]))
-                    else:
-                         boroughs = parsed["borough"]
+     # --- Apply year range ---
+     if year_range and len(year_range) == 2:
+          y0, y1 = int(year_range[0]), int(year_range[1])
+          dff = dff[(dff["YEAR"] >= y0) & (dff["YEAR"] <= y1)]
 
-               if "vehicle" in parsed:
-                    if vehicles:
-                         vehicles = list(set(vehicles) & set(parsed["vehicle"]))
-                    else:
-                         vehicles = parsed["vehicle"]
+     # --- Apply borough filter ---
+     if boroughs:
+          dff = dff[dff["BOROUGH"].isin(boroughs)]
 
-               if "person_type" in parsed:
-                    if person_type:
-                         person_type = list(set(person_type) & set(parsed["person_type"]))
-                    else:
-                         person_type = parsed["person_type"]
+     # --- Apply injury filter ---
+     if injuries:
+          dff = dff[dff["PERSON_INJURY"].fillna("").astype(str).isin([str(i) for i in injuries])]
 
-               if "injury" in parsed:
-                    if injuries:
-                         injuries = list(set(injuries) & set(parsed["injury"]))
-                    else:
-                         injuries = parsed["injury"]
+     # --- Apply vehicle filter ---
+     if vehicles:
+          mask = dff["VEHICLE_TYPES_LIST"].apply(lambda lst: any(v in (lst if isinstance(lst, list) else []) for v in vehicles))
+          dff = dff[mask]
 
-               if "gender" in parsed:
-                    gender_filter = parsed["gender"]
-                    dff = dff[dff["PERSON_SEX"].isin(gender_filter)]
+     # --- Apply contributing factor filter ---
+     if factors:
+          # Clean the factors to remove any extra characters
+          clean_factors = [str(f).strip().strip("[]'\"") for f in factors]
+          mask = dff["FACTORS_LIST"].apply(lambda lst: any(
+              any(clean_f in str(fact).strip().strip("[]'\"") for clean_f in clean_factors)
+              for fact in (lst if isinstance(lst, list) else [])
+          ))
+          dff = dff[mask]
+
+     # --- Apply person type filter ---
+     if person_type:
+          dff = dff[dff["PERSON_TYPE"].isin(person_type)]
 
      # Calculate statistics for live stats
      total_crashes = len(dff)
@@ -1193,4 +1189,4 @@ def clear_all_filters(n_clicks):
     )
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8050, debug=True)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8050)), debug=False)
