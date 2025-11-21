@@ -1189,4 +1189,4 @@ def clear_all_filters(n_clicks):
     )
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=0, debug=False)  # 0 = auto-select available port
+    app.run(host='0.0.0.0', port=8056, debug=False)  # 0 = auto-select available port
