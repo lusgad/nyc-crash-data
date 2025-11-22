@@ -21,7 +21,6 @@ class CrashDataQuery:
     def __init__(self):
         self.df = None
         self.loaded = False
-        self.filtered_df = None
     
     def load_dataset(self):
         """Load the dataset when first needed"""
@@ -42,7 +41,6 @@ class CrashDataQuery:
         """Preprocess the data once after loading"""
         print("Preprocessing data...")
         
-        # Borough mapping
         borough_mapping = {
             'MANHATTAN': 'Manhattan',
             'BROOKLYN': 'Brooklyn',
@@ -57,14 +55,12 @@ class CrashDataQuery:
         else:
             self.df["BOROUGH"] = "Unknown"
 
-        # Datetime processing
         self.df["CRASH_DATETIME"] = pd.to_datetime(self.df["CRASH_DATETIME"], errors="coerce")
         self.df["YEAR"] = self.df["CRASH_DATETIME"].dt.year
         self.df["MONTH"] = self.df["CRASH_DATETIME"].dt.month
         self.df["HOUR"] = self.df["CRASH_DATETIME"].dt.hour
         self.df["DAY_OF_WEEK"] = self.df["CRASH_DATETIME"].dt.day_name()
 
-        # Numeric columns
         num_cols = [
             "NUMBER OF PERSONS INJURED", "NUMBER OF PERSONS KILLED",
             "NUMBER OF PEDESTRIANS INJURED", "NUMBER OF PEDESTRIANS KILLED",
@@ -77,7 +73,6 @@ class CrashDataQuery:
             else:
                 self.df[c] = 0
 
-        # Derived columns
         self.df["TOTAL_INJURED"] = self.df[["NUMBER OF PERSONS INJURED",
                                            "NUMBER OF PEDESTRIANS INJURED",
                                            "NUMBER OF CYCLIST INJURED",
@@ -88,21 +83,17 @@ class CrashDataQuery:
                                           "NUMBER OF MOTORIST KILLED"]].sum(axis=1)
         self.df["SEVERITY_SCORE"] = (self.df["TOTAL_INJURED"] * 1 + self.df["TOTAL_KILLED"] * 5)
 
-        # Address
         if "FULL ADDRESS" not in self.df.columns:
             self.df["FULL ADDRESS"] = self.df.get("ON STREET NAME", "").fillna("") + ", " + self.df.get("BOROUGH", "")
 
-        # Coordinates
         for coord in ("LATITUDE", "LONGITUDE"):
             if coord in self.df.columns:
                 self.df[coord] = pd.to_numeric(self.df[coord], errors="coerce")
             else:
                 self.df[coord] = np.nan
 
-        # Vehicle types parsing
         self.df["VEHICLE_TYPES_LIST"] = self.df.get("ALL_VEHICLE_TYPES", "").apply(self.parse_vehicle_list)
 
-        # Factors parsing
         if "ALL_CONTRIBUTING_FACTORS" in self.df.columns:
             self.df["FACTORS_LIST"] = self.df["ALL_CONTRIBUTING_FACTORS"].apply(self.parse_factor_list)
         elif "ALL_CONTRIBUTING_FACTORS_STR" in self.df.columns:
@@ -119,17 +110,12 @@ class CrashDataQuery:
             else:
                 self.df["FACTORS_LIST"] = [[] for _ in range(len(self.df))]
 
-        # Person data
         if "PERSON_TYPE" not in self.df.columns:
-            if "PERSON_TYPE" in self.df.columns:
-                self.df["PERSON_TYPE"] = self.df["PERSON_TYPE"]
-            else:
-                self.df["PERSON_TYPE"] = self.df.get("PERSON_TYPE", "Unknown").fillna("Unknown")
+            self.df["PERSON_TYPE"] = self.df.get("PERSON_TYPE", "Unknown").fillna("Unknown")
 
         if "POSITION_IN_VEHICLE_CLEAN" not in self.df.columns:
             self.df["POSITION_IN_VEHICLE_CLEAN"] = self.df.get("POSITION_IN_VEHICLE_CLEAN", "").fillna("Unknown")
 
-        # Additional columns
         for col in ["PERSON_AGE", "PERSON_SEX", "BODILY_INJURY", "SAFETY_EQUIPMENT", "EMOTIONAL_STATUS", "UNIQUE_ID", "EJECTION", "ZIP CODE", "PERSON_INJURY"]:
             if col not in self.df.columns:
                 if col == "UNIQUE_ID":
@@ -187,7 +173,6 @@ class CrashDataQuery:
         
         dff = self.df.copy()
         
-        # Apply filters
         if year_range and len(year_range) == 2:
             y0, y1 = int(year_range[0]), int(year_range[1])
             dff = dff[(dff["YEAR"] >= y0) & (dff["YEAR"] <= y1)]
@@ -218,23 +203,20 @@ class CrashDataQuery:
     def get_initial_stats(self):
         """Get initial statistics without loading full dataset"""
         if not self.loaded:
-            # Load just enough data to get stats
             temp_df = pd.read_csv(
                 DATASET_URL,
                 compression='gzip',
                 dtype=str,
                 low_memory=False,
-                nrows=1000  # Just sample for initial stats
+                nrows=1000
             )
             
-            # Get year range from sample
             temp_df["CRASH_DATETIME"] = pd.to_datetime(temp_df["CRASH_DATETIME"], errors="coerce")
             temp_df["YEAR"] = temp_df["CRASH_DATETIME"].dt.year
             
             min_year = int(temp_df["YEAR"].min()) if not temp_df["YEAR"].isna().all() else 2010
             max_year = int(temp_df["YEAR"].max()) if not temp_df["YEAR"].isna().all() else pd.Timestamp.now().year
             
-            # Get boroughs from sample
             borough_mapping = {
                 'MANHATTAN': 'Manhattan',
                 'BROOKLYN': 'Brooklyn',
@@ -413,7 +395,7 @@ app.layout = dbc.Container([
         ], style={'backgroundColor': '#add8e6'})
     ], className="mb-4", style={'border': '2px solid #FF8DA1'}),
 
-    # Rest of your layout remains the same...
+    # Rest of layout remains the same as your original...
     dbc.Tabs([
         dbc.Tab([
             html.Br(),
@@ -443,7 +425,6 @@ app.layout = dbc.Container([
             ], className="mb-4"),
         ], label="🗺️ Crash Geography", tab_id="tab-1"),
 
-        # ... rest of your tabs remain unchanged
         dbc.Tab([
             html.Br(),
             dbc.Row([
@@ -582,8 +563,6 @@ app.layout = dbc.Container([
 
 ], fluid=True, style={'backgroundColor': '#cee8f0', 'minHeight': '100vh', 'padding': '20px'})
 
-# ... rest of your callbacks and functions remain the same
-
 def jitter_coords(series, scale=0.0006):
      return series + np.random.normal(loc=0, scale=scale, size=series.shape)
 
@@ -686,10 +665,8 @@ def parse_search_query(q):
 def populate_dropdowns(n_clicks):
     """Populate dropdown options after first data load"""
     if n_clicks and n_clicks > 0:
-        # This will trigger the data load
         dff = query_handler.query_data()
         
-        # Get unique values for dropdowns
         vehicle_options = [{"label": v, "value": v} for v in sorted({vt for sub in dff["VEHICLE_TYPES_LIST"] for vt in sub})]
         factor_options = [{"label": f, "value": f} for f in sorted({f for sub in dff["FACTORS_LIST"] for f in sub})]
         person_type_options = [{"label": v, "value": v} for v in sorted(dff["PERSON_TYPE"].dropna().unique())]
@@ -793,7 +770,7 @@ def update_dashboard(n_clicks, year_range, boroughs, vehicles, factors, injuries
      if any([search_text and parsed.get(key) for key in ['year_range', 'year', 'borough', 'vehicle', 'person_type', 'injury']]):
          dff = query_handler.query_data(year_range, boroughs, vehicles, factors, injuries, person_type)
 
-     # ... rest of your visualization code remains exactly the same
+     # Calculate summary statistics
      total_crashes = len(dff)
      total_injuries = dff["TOTAL_INJURED"].sum()
      total_killed = dff["TOTAL_KILLED"].sum()
@@ -811,9 +788,7 @@ def update_dashboard(n_clicks, year_range, boroughs, vehicles, factors, injuries
 
      vibrant_colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9']
 
-     # ... ALL your existing visualization code goes here
-     # (I'm omitting it for brevity since it's identical to your original code)
-
+     # Create all the figures - this is the key part that was missing
      injuries_by_borough = dff.groupby("BOROUGH")["TOTAL_INJURED"].sum().reset_index().sort_values("TOTAL_INJURED", ascending=False)
      fig_inj_borough = px.bar(injuries_by_borough, x="BOROUGH", y="TOTAL_INJURED",
                               labels={"TOTAL_INJURED": "Total Injured", "BOROUGH": "Borough"},
@@ -823,10 +798,258 @@ def update_dashboard(n_clicks, year_range, boroughs, vehicles, factors, injuries
      fig_inj_borough.update_traces(textposition="outside")
      fig_inj_borough.update_layout(margin=dict(t=40, b=20), template=pink_template, showlegend=False)
 
-     # ... continue with all your other figure creations
+     # Factor chart
+     factor_rows = []
+     for _, row in dff.iterrows():
+          for f in row["FACTORS_LIST"]:
+               factor_rows.append((f, row["UNIQUE_ID"] if "UNIQUE_ID" in row else 1))
+     factor_df = pd.DataFrame(factor_rows, columns=["Factor", "UID"]) if factor_rows else pd.DataFrame(columns=["Factor", "UID"])
+     factor_counts_df = factor_df["Factor"].value_counts().head(15).reset_index()
+     factor_counts_df.columns = ["Factor", "Count"]
+     fig_factor = px.bar(factor_counts_df, x="Count", y="Factor", orientation="h",
+                         labels={"Count": "Number of Crashes", "Factor": "Contributing Factor"},
+                         color="Count",
+                         color_continuous_scale="purples")
+     fig_factor.update_layout(margin=dict(t=40, b=20), yaxis={'categoryorder':'total ascending'}, template=pink_template)
+
+     # Year trend chart
+     year_group = dff.groupby(["YEAR", "BOROUGH"]).size().reset_index(name="Crashes")
+     if not year_group.empty:
+          fig_year = px.line(year_group, x="YEAR", y="Crashes", color="BOROUGH", markers=True,
+                           color_discrete_map=BOROUGH_COLORS)
+          fig_year.update_layout(template=pink_template)
+     else:
+          fig_year = go.Figure()
+          fig_year.update_layout(title="Crashes per Year (no data for selection)")
+
+     # Map chart
+     df_map = dff.dropna(subset=["LATITUDE", "LONGITUDE"]).copy()
+     if not df_map.empty:
+          df_map["_LAT_JIT"] = jitter_coords(df_map["LATITUDE"].fillna(0).astype(float), scale=0.0005)
+          df_map["_LON_JIT"] = jitter_coords(df_map["LONGITUDE"].fillna(0).astype(float), scale=0.0005)
+          fig_map = px.scatter_mapbox(df_map, lat="_LAT_JIT", lon="_LON_JIT", color="BOROUGH",
+                                       hover_name="FULL ADDRESS",
+                                       hover_data={"FULL ADDRESS": True,
+                                                   "TOTAL_INJURED": True,
+                                                   "TOTAL_KILLED": True,
+                                                   "CRASH_DATETIME": True,
+                                                   "_LAT_JIT": False, "_LON_JIT": False},
+                                       zoom=9, height=500,
+                                       mapbox_style="open-street-map",
+                                       color_discrete_map=BOROUGH_COLORS)
+          fig_map.update_traces(marker=dict(size=8, opacity=0.7))
+          fig_map.update_layout(margin=dict(t=0), template=pink_template)
+     else:
+          fig_map = go.Figure()
+          fig_map.update_layout(title="No location data to display")
+
+     # Gender distribution
+     gender_dist = dff.groupby("PERSON_SEX")["UNIQUE_ID"].count().reset_index(name="Count")
+     fig_gender = px.pie(gender_dist, names="PERSON_SEX", values="Count",
+                        color_discrete_sequence=['#4A90E2', '#FF8DA1', '#95A5A6'])
+     fig_gender.update_layout(margin=dict(t=40, b=20), template=pink_template)
+
+     # Safety equipment
+     safety_dist = dff.groupby("SAFETY_EQUIPMENT")["UNIQUE_ID"].count().reset_index(name="Count")
+     safety_dist = safety_dist.sort_values("Count", ascending=False).head(5)
+     fig_safety = px.pie(safety_dist, names="SAFETY_EQUIPMENT", values="Count",
+                         labels={"SAFETY_EQUIPMENT": "Safety Equipment", "Count": "Number of Records"},
+                         color_discrete_sequence=['#FF8DA1', '#FFB6C1', '#FFD1DC', '#FFAEC9', '#FF85A1'])
+     fig_safety.update_layout(margin=dict(t=40, b=20), template=pink_template)
+
+     # Emotional state
+     emotional_dist = dff.groupby("EMOTIONAL_STATUS")["UNIQUE_ID"].count().reset_index(name="Count")
+     emotional_dist = emotional_dist.sort_values("Count", ascending=False)
+     fig_emotional = px.bar(emotional_dist, x="EMOTIONAL_STATUS", y="Count",
+                             labels={"EMOTIONAL_STATUS": "Emotional State", "Count": "Number of Records"},
+                             color_discrete_sequence=['#FF8DA1'])
+     fig_emotional.update_layout(margin=dict(t=40, b=20), xaxis={'categoryorder':'total descending'}, template=pink_template, showlegend=False)
+
+     # Age distribution
+     dff["PERSON_AGE"] = pd.to_numeric(dff["PERSON_AGE"], errors='coerce')
+     fig_age_hist = px.histogram(dff, x="PERSON_AGE", nbins=30,
+                           marginal="box",
+                           hover_data=["PERSON_AGE"],
+                           color_discrete_sequence=['#FF6B6B'])
+     fig_age_hist.update_layout(
+         margin=dict(t=40, b=20),
+         xaxis_title="Age",
+         yaxis_title="Count",
+         template=pink_template
+     )
+
+     # Person type over time
+     person_type_time = dff.groupby(["YEAR", "PERSON_TYPE"]).agg({
+         "TOTAL_INJURED": "sum"
+     }).reset_index()
+     fig_person_time = px.bar(person_type_time, x="YEAR", y="TOTAL_INJURED", color="PERSON_TYPE",
+                             barmode="stack",
+                             color_discrete_sequence=vibrant_colors)
+     fig_person_time.update_layout(
+         margin=dict(t=40, b=20),
+         legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+         template=pink_template
+     )
 
      summary = f"📊 Currently showing: {total_crashes:,} crashes | {total_injuries:,} injured | {total_killed:,} fatalities"
 
+     # Borough chart
+     borough_df = dff.groupby("BOROUGH").size().reset_index(name="Count").sort_values("Count", ascending=False)
+     fig_borough_dareen = px.bar(borough_df, x="BOROUGH", y="Count",
+                                color="BOROUGH",
+                                color_discrete_map=BOROUGH_COLORS)
+     fig_borough_dareen.update_layout(template=pink_template, showlegend=False)
+
+     # Injury chart
+     injury_df = dff.groupby("BODILY_INJURY").size().reset_index(name="Count").sort_values("Count", ascending=False)
+     fig_injury_dareen = px.bar(
+          injury_df,
+          x="Count",
+          y="BODILY_INJURY",
+          orientation="h",
+          labels={"BODILY_INJURY": "Bodily Injury", "Count": "Number of Cases"},
+          color_discrete_sequence=['#20B2AA']
+     )
+     fig_injury_dareen.update_yaxes(categoryorder="total ascending")
+     fig_injury_dareen.update_layout(margin=dict(t=40, b=20), template=pink_template, showlegend=False)
+
+     # Ejection chart
+     fig_ejection = px.bar(
+          dff.groupby(["PERSON_TYPE", "EJECTION"]).size().reset_index(name="Count"),
+          x="EJECTION",
+          y="Count",
+          color="PERSON_TYPE",
+          labels={"EJECTION": "Ejection Status", "Count": "Number of Cases"},
+          color_discrete_sequence=vibrant_colors
+     )
+     fig_ejection.update_layout(template=pink_template)
+
+     # Complaint chart
+     top_complaints = dff["COMPLAINT"].value_counts().nlargest(10).index
+     fig_complaint = px.bar(
+          dff[dff["COMPLAINT"].isin(top_complaints)].groupby(["COMPLAINT", "PERSON_TYPE"])
+          .size().reset_index(name="Count"),
+          x="COMPLAINT",
+          y="Count",
+          color="PERSON_TYPE",
+          labels={"COMPLAINT": "Complaint Type", "Count": "Number of Cases"},
+          color_discrete_sequence=vibrant_colors
+     )
+     fig_complaint.update_layout(xaxis_tickangle=-45, template=pink_template)
+
+     # Vehicle factor chart
+     top_factors = dff["CONTRIBUTING FACTOR VEHICLE 1"].value_counts().nlargest(10).index
+     fig_vehicle_factor = px.density_heatmap(
+          dff[dff["CONTRIBUTING FACTOR VEHICLE 1"].isin(top_factors)],
+          x="VEHICLE TYPE CODE 1",
+          y="CONTRIBUTING FACTOR VEHICLE 1",
+          labels={"VEHICLE TYPE CODE 1": "Vehicle Type", "CONTRIBUTING FACTOR VEHICLE 1": "Contributing Factor"},
+          color_continuous_scale="viridis"
+     )
+     fig_vehicle_factor.update_layout(template=pink_template)
+
+     # Position chart
+     fig_position = px.bar(
+          dff.groupby(["POSITION_IN_VEHICLE_CLEAN", "PERSON_INJURY"]).size().reset_index(name="Count"),
+          x="POSITION_IN_VEHICLE_CLEAN",
+          y="Count",
+          color="PERSON_INJURY",
+          labels={"POSITION_IN_VEHICLE_CLEAN": "Position in Vehicle", "Count": "Number of Cases"},
+          color_discrete_sequence=vibrant_colors
+     )
+     fig_position.update_layout(template=pink_template)
+
+     # Vehicle trend chart
+     trend_df = dff.groupby(["YEAR", "VEHICLE TYPE CODE 1"]).size().reset_index(name="Count")
+     fig_vehicle_trend = px.line(
+          trend_df,
+          x="YEAR",
+          y="Count",
+          color="VEHICLE TYPE CODE 1",
+          labels={"YEAR": "Year", "Count": "Number of Crashes", "VEHICLE TYPE CODE 1": "Vehicle Type"},
+          color_discrete_sequence=vibrant_colors
+     )
+     fig_vehicle_trend.update_layout(template=pink_template)
+
+     # Hotspot clustering
+     df_coords = dff.dropna(subset=["LATITUDE", "LONGITUDE"]).copy()
+     if len(df_coords) > 10:
+          coords = df_coords[["LATITUDE", "LONGITUDE"]].values
+          kmeans = KMeans(n_clusters=min(10, len(df_coords)), random_state=42)
+          df_coords["CLUSTER"] = kmeans.fit_predict(coords)
+          cluster_sizes = df_coords.groupby("CLUSTER").size()
+          df_coords["CLUSTER_SIZE"] = df_coords["CLUSTER"].map(cluster_sizes)
+
+          fig_hotspot = px.scatter_mapbox(df_coords, lat="LATITUDE", lon="LONGITUDE",
+                                         color="CLUSTER_SIZE", size="CLUSTER_SIZE",
+                                         hover_name="FULL ADDRESS",
+                                         hover_data={"CLUSTER_SIZE": True, "TOTAL_INJURED": True},
+                                         zoom=9, height=500,
+                                         mapbox_style="open-street-map",
+                                         color_continuous_scale="viridis")
+          fig_hotspot.update_layout(template=pink_template)
+     else:
+          fig_hotspot = go.Figure()
+          fig_hotspot.update_layout(title="Not enough location data for clustering")
+
+     # Correlation heatmap
+     numeric_cols = ['PERSON_AGE', 'TOTAL_INJURED', 'TOTAL_KILLED', 'SEVERITY_SCORE', 'HOUR']
+     available_numeric = [col for col in numeric_cols if col in dff.columns]
+
+     if len(available_numeric) > 1:
+          corr_matrix = dff[available_numeric].corr()
+          fig_corr = ff.create_annotated_heatmap(
+               z=corr_matrix.values,
+               x=corr_matrix.columns.tolist(),
+               y=corr_matrix.columns.tolist(),
+               annotation_text=corr_matrix.round(2).values,
+               colorscale='Blues'
+          )
+          fig_corr.update_layout(template=pink_template)
+     else:
+          fig_corr = go.Figure()
+          fig_corr.update_layout(title="Not enough numeric data for correlation analysis")
+
+     # Temporal patterns
+     if 'HOUR' in dff.columns and 'DAY_OF_WEEK' in dff.columns:
+          temporal_data = dff.groupby(['DAY_OF_WEEK', 'HOUR']).size().reset_index(name='Count')
+          day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+          temporal_data['DAY_OF_WEEK'] = pd.Categorical(temporal_data['DAY_OF_WEEK'], categories=day_order, ordered=True)
+          temporal_data = temporal_data.sort_values(['DAY_OF_WEEK', 'HOUR'])
+
+          fig_temporal = px.density_heatmap(temporal_data, x='HOUR', y='DAY_OF_WEEK', z='Count',
+                                           color_continuous_scale='viridis')
+          fig_temporal.update_layout(template=pink_template)
+     else:
+          fig_temporal = go.Figure()
+          fig_temporal.update_layout(title="No temporal data available")
+
+     # Severity factors
+     if 'SEVERITY_SCORE' in dff.columns:
+          severity_factors = dff.groupby('BOROUGH')['SEVERITY_SCORE'].mean().reset_index()
+          severity_factors = severity_factors.sort_values('SEVERITY_SCORE', ascending=False)
+
+          fig_severity = px.bar(severity_factors, x='BOROUGH', y='SEVERITY_SCORE',
+                               color='BOROUGH', color_discrete_map=BOROUGH_COLORS)
+          fig_severity.update_layout(template=pink_template, showlegend=False)
+     else:
+          fig_severity = go.Figure()
+          fig_severity.update_layout(title="No severity data available")
+
+     # Risk density map
+     df_risk = dff.dropna(subset=["LATITUDE", "LONGITUDE"]).copy()
+     if not df_risk.empty:
+          fig_density = px.density_mapbox(df_risk, lat='LATITUDE', lon='LONGITUDE',
+                                         z='SEVERITY_SCORE', radius=20,
+                                         zoom=9, height=500,
+                                         mapbox_style="open-street-map",
+                                         color_continuous_scale="viridis")
+          fig_density.update_layout(template=pink_template)
+     else:
+          fig_density = go.Figure()
+          fig_density.update_layout(title="No location data for density map")
+
+     # Live stats
      live_stats = dbc.Row([
          dbc.Col(dbc.Card(dbc.CardBody([
              html.H4("🏎️ Total Crashes", className="text-primary", style={'color': '#FF8DA1'}),
@@ -846,11 +1069,34 @@ def update_dashboard(n_clicks, year_range, boroughs, vehicles, factors, injuries
          ]), style={'backgroundColor': '#FFE6E6', 'border': '2px solid #FF8DA1'}), md=3),
      ])
 
-     # Return all figures (you'll need to create all of them as in your original code)
+     # Return ALL 23 outputs in the correct order
      return (
-          fig_inj_borough,
-          # ... return all your figures in the same order as your original callback
-          live_stats,
+          fig_inj_borough,           # 1
+          fig_factor,                # 2
+          fig_year,                  # 3
+          fig_map,                   # 4
+          fig_gender,                # 5
+          fig_safety,                # 6
+          fig_emotional,             # 7
+          fig_age_hist,              # 8
+          fig_person_time,           # 9
+          summary,                   # 10
+
+          fig_borough_dareen,        # 11
+          fig_injury_dareen,         # 12
+          fig_ejection,              # 13
+          fig_complaint,             # 14
+          fig_vehicle_factor,        # 15
+          fig_position,              # 16
+          fig_vehicle_trend,         # 17
+
+          fig_hotspot,               # 18
+          fig_corr,                  # 19
+          fig_temporal,              # 20
+          fig_severity,              # 21
+          fig_density,               # 22
+
+          live_stats,                # 23
      )
 
 @app.callback(
