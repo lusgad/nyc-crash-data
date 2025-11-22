@@ -23,6 +23,8 @@ from sklearn.preprocessing import StandardScaler
 import plotly.figure_factory as ff
 import os
 import pyarrow.parquet as pq
+import requests
+
 
 url = "https://raw.githubusercontent.com/lusgad/nyc-crash-data/main/nyc_crashes.parquet"
 
