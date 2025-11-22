@@ -19,7 +19,7 @@ df = pd.read_csv(
     compression='gzip',
     dtype=str,
     low_memory=False,
-    nrows=115_000
+    nrows=120_000
 )
 
 print(f"Loaded {len(df)} rows from first part")
