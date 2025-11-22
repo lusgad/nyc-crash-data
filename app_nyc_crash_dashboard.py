@@ -26,7 +26,7 @@ import requests
 import io
 
 
-url = "https://raw.githubusercontent.com/lusgad/nyc-crash-data/main/nyc_crashes.parquet"
+url = "https://github.com/lusgad/nyc-crash-data/raw/d7e0393bec5cdf7f7ef1905b5ae533996f0410bd/nyc_crashes.parquet"
 
 # Download the Parquet file
 response = requests.get(url)
