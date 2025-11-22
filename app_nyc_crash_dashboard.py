@@ -10,6 +10,7 @@ Original file is located at
 
 # app_nyc_crash_dashboard.py
 import ast
+import ast
 import numpy as np
 import pandas as pd
 import dash
@@ -19,11 +20,10 @@ import plotly.express as px
 import plotly.graph_objects as go
 import re
 from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
 import plotly.figure_factory as ff
 import os
-import pyarrow.parquet as pq
 import requests
+import io
 
 
 url = "https://raw.githubusercontent.com/lusgad/nyc-crash-data/main/nyc_crashes.parquet"
