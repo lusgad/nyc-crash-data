@@ -14,10 +14,15 @@ import os
 
 import pandas as pd
 
+url = "https://raw.githubusercontent.com/lusgad/nyc-crash-data/main/data_part_aa.gz"
+
 df = pd.read_csv(
-    "best.csv.gz",
-    compression='gzip'
-)
+    url,
+    compression='gzip',
+    dtype=str,
+    low_memory=False,
+    nrows=115_000
+) 
 
 borough_mapping = {
     'MANHATTAN': 'Manhattan',
