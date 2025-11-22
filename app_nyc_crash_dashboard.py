@@ -14,15 +14,44 @@ import os
 
 import pandas as pd
 
+import pandas as pd
+
 url = "https://raw.githubusercontent.com/lusgad/nyc-crash-data/main/data_part_aa.gz"
 
+# First, get the total number of rows to calculate how many to skip
+# Read just the first row to get headers and count total rows
+df_sample = pd.read_csv(
+    url,
+    compression='gzip',
+    dtype=str,
+    low_memory=False,
+    nrows=1
+)
+
+# Count total rows in the file
+with pd.read_csv(
+    url,
+    compression='gzip',
+    dtype=str,
+    low_memory=False,
+    chunksize=10000
+) as reader:
+    total_rows = sum(len(chunk) for chunk in reader)
+
+print(f"Total rows in file: {total_rows:,}")
+
+# Calculate how many rows to skip to get the last 115k rows
+skip_rows = max(0, total_rows - 115_000)
+
+# Read the last 115k rows
 df = pd.read_csv(
     url,
     compression='gzip',
     dtype=str,
     low_memory=False,
-    nrows=115_000
-) 
+    skiprows=range(1, skip_rows + 1)  # +1 to account for header row
+)
+
 
 borough_mapping = {
     'MANHATTAN': 'Manhattan',
