@@ -12,17 +12,30 @@ from sklearn.preprocessing import StandardScaler
 import plotly.figure_factory as ff
 import os
 
-url = "https://raw.githubusercontent.com/lusgad/nyc-crash-data/main/data_part_aa.gz"
+import pandas as pd
 
-df = pd.read_csv(
-    url,
+# Read 60,000 rows from data_part_aa.gz
+url_aa = "https://raw.githubusercontent.com/lusgad/nyc-crash-data/main/data_part_aa.gz"
+df_aa = pd.read_csv(
+    url_aa,
     compression='gzip',
     dtype=str,
     low_memory=False,
-    nrows=120_000
+    nrows=60_000
 )
 
-print(f"Loaded {len(df)} rows from first part")
+# Read 55,000 rows from data_part_aj.gz
+url_aj = "https://raw.githubusercontent.com/lusgad/nyc-crash-data/main/data_part_aj.gz"
+df_aj = pd.read_csv(
+    url_aj,
+    compression='gzip',
+    dtype=str,
+    low_memory=False,
+    nrows=55_000
+)
+
+# Combine both DataFrames
+df = pd.concat([df_aa, df_aj], ignore_index=True)
 
 borough_mapping = {
     'MANHATTAN': 'Manhattan',
